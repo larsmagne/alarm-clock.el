@@ -225,9 +225,11 @@
 	(setq time ""))
       (unless (<= 0 (car bits) 59)
 	(setq time "")))
-    (setq smallclock-alarm 
-	  (run-at-time (smallclock-number-of-seconds-until time)
-		       nil #'smallclock-sound-alarm))
+    (setq smallclock-alarm-time time)
+    (unless (equal time "")
+      (setq smallclock-alarm 
+	    (run-at-time (smallclock-number-of-seconds-until time)
+			 nil #'smallclock-sound-alarm)))
     (smallclock-display)))
 
 (defun smallclock-number-of-seconds-until (smallclock)
@@ -275,9 +277,9 @@
 		   (lambda (proc _status)
 		     (unless (process-live-p proc)
 		       (kill-buffer (process-buffer proc))
-		       (when (or smallcontrol-stop-alarm
-				 ;; Stop after running for two minutes.
-				 (> smallclock-alarm-count 120))
+		       (when (and (not smallcontrol-stop-alarm)
+				  ;; Stop after running for two minutes.
+				  (< smallclock-alarm-count 120))
 			 (funcall func))))))))
     (funcall func)))
   
