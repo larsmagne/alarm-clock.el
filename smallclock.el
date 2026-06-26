@@ -202,10 +202,12 @@
 	   `(jukebox-set-vol-volume ,smallclock-volume "bedroom")))
 
 (defvar smallclock-alarm nil)
+(defvar smallclock-message nil)
 
 (defun smallclock-set-alarm ()
   (interactive)
-  (let ((time smallclock-key-sequence))
+  (let ((time smallclock-key-sequence)
+	(input smallclock-key-sequence))
     (setq time
 	  (cond
 	   ((= (length time) 1)
@@ -226,10 +228,23 @@
       (unless (<= 0 (car bits) 59)
 	(setq time "")))
     (setq smallclock-alarm-time time)
-    (unless (equal time "")
-      (setq smallclock-alarm 
-	    (run-at-time (smallclock-number-of-seconds-until time)
-			 nil #'smallclock-sound-alarm)))
+    (if (equal time "")
+	(setq smallclock-message
+	      (cons 5 (format "Invalid: %S" input)))
+      (let ((when (smallclock-number-of-seconds-until time)))
+	(setq smallclock-alarm 
+	      (run-at-time when nil #'smallclock-sound-alarm)
+	      smallclock-message
+	      (cons 5 (format "(...il y a %s)"
+			      (cond
+			       ((< when 60)
+				(format "%ds" when))
+			       ((< when 3600)
+				(format "%dm" (/ when 60)))
+			       (t
+				(format "%dh et %dm"
+					(/ when 3600)
+					(/ (% when 3600) 60)))))))))
     (smallclock-display)))
 
 (defun smallclock-number-of-seconds-until (smallclock)
@@ -331,6 +346,19 @@
 		      (elt smallclock-alarm-colors
 			   (mod (cl-incf smallclock-alarm-count) 2)))
     	      :font-family "futura")
+    (when smallclock-message
+      (svg-text svg (cdr smallclock-message)
+		:x (- (/ width 2.0) 210)
+		:y 500
+		:font-size 80
+		:text-anchor "middle"
+		:font-weight "bold"
+		:transform "rotate(-30)"
+		:fill "red"
+    		:font-family "futura")
+      (setcar smallclock-message (1- (car smallclock-message)))
+      (when (< (car smallclock-message) 0)
+	(setq smallclock-message nil)))
     (insert-image (svg-image svg :width 720))
     (goto-char (point-min))))
 
