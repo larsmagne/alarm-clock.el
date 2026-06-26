@@ -31,7 +31,7 @@
 (require 'svg)
 (require 'eval-server)
 
-(defvar smallclock-temperature 0)
+(defvar smallclock-temperature nil)
 (defvar smallclock-alarm-time "")
 
 (defun smallclock-display ()
@@ -41,13 +41,14 @@
 			 smallclock-alarm-time
 			 (if smallclock-temperature
 			     (format "%.1f°" smallclock-temperature)
-			   "no temp°")
+			   "no temp")
 			 smallclock-sleeve
 			 720 720)
     (put-text-property (point-min) (point-max) 'keymap nil)))
 
 (defvar smallclock-timer nil)
 (defvar smallclock-temperature-timer nil)
+(defvar smallclock-sleeve-timer nil)
 
 (defun start-smallclock ()
   (when smallclock-timer
@@ -57,6 +58,10 @@
     (cancel-timer smallclock-temperature-timer))
   (setq smallclock-temperature-timer
 	(run-at-time 2 30 #'smallclock-get-temperature)))
+  (when smallclock-sleeve-timer
+    (cancel-timer smallclock-sleeve-timer))
+  (setq smallclock-sleeve-timer
+	(run-at-time 3 30 #'smallclock-get-sleeve)))
 
 (defvar smallclock-poll-process nil)
 
