@@ -34,6 +34,9 @@
 (defvar smallclock-temperature nil)
 (defvar smallclock-alarm-time "")
 
+(defvar smallclock-alarm-colors '("#888" "#8f8"))
+(defvar smallclock-alarm-count 0)
+
 (defun smallclock-display ()
   (with-current-buffer (get-buffer-create "*smallclock*")
     (erase-buffer)
@@ -222,21 +225,19 @@
 	(setq time ""))
       (unless (<= 0 (car bits) 59)
 	(setq time "")))
-    (setq smallclock-alarm-time time)
-    (when nil
-      (setq smallclock-alarm 
-	    (run-at-time (smallclock-number-of-seconds-until time)
-			 nil #'smallclock-sound-alarm)))
+    (setq smallclock-alarm 
+	  (run-at-time (smallclock-number-of-seconds-until time)
+		       nil #'smallclock-sound-alarm))
     (smallclock-display)))
 
 (defun smallclock-number-of-seconds-until (smallclock)
   (let ((seconds 0)
 	(now (time-to-seconds (current-time))))
     (while (not (string= smallclock (format-time-string "%H:%M"
-						   (seconds-to-time (+ seconds now)))))
+							(seconds-to-time (+ seconds now)))))
       (cl-incf seconds 40))
     (while (string= smallclock (format-time-string "%H:%M"
-					      (seconds-to-time (+ seconds now))))
+						   (seconds-to-time (+ seconds now))))
       (cl-decf seconds))
     seconds))
 
@@ -251,11 +252,12 @@
 (defun smallclock-sound-alarm ()
   (let ((volume 10)
 	func)
-    (setq smallcontrol-stop-alarm nil)
+    (setq smallcontrol-stop-alarm nil
+	  smallclock-alarm-count 0)
     (setq func
 	  (lambda ()
 	    (call-process "amixer" nil nil nil
-			  "-c" "1" "sset" "PCM"
+			  "-c" "2" "sset" "PCM"
 			  (format "%d%%" volume))
 	    (cl-incf volume 10)
 	    (when (> volume 100)
@@ -264,7 +266,7 @@
 		  (make-process
 		   :name "alarm"
 		   :buffer (get-buffer-create " *alarm*")
-		   :command (list "mpg123" "-o" "alsa" "-a" "plughw:1,0"
+		   :command (list "mpg123" "-o" "alsa" "-a" "plughw:2,0"
 				  (expand-file-name
 				   "alarm.mp3"
 				   (file-name-directory
@@ -273,7 +275,9 @@
 		   (lambda (proc _status)
 		     (unless (process-live-p proc)
 		       (kill-buffer (process-buffer proc))
-		       (unless smallcontrol-stop-alarm
+		       (when (or smallcontrol-stop-alarm
+				 ;; Stop after running for two minutes.
+				 (> smallclock-alarm-count 120))
 			 (funcall func))))))))
     (funcall func)))
   
@@ -320,7 +324,10 @@
 	      :font-size 100
 	      :text-anchor "middle"
 	      :font-weight "bold"
-	      :fill "#888"
+	      :fill (if smallcontrol-stop-alarm
+			(car smallclock-alarm-colors)
+		      (elt smallclock-alarm-colors
+			   (mod (cl-incf smallclock-alarm-count) 2)))
     	      :font-family "futura")
     (insert-image (svg-image svg :width 720))
     (goto-char (point-min))))
@@ -361,7 +368,7 @@
 			   (erase-buffer)
 			   (smallclock-adjust-brightness lx)))))))))
 
-(defun smallclock-adjust-brightness (lx)
+(defun smallclock-adjust-brightness (_lx)
   )
 
 (provide 'smallclock)
