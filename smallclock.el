@@ -57,7 +57,7 @@
   (when smallclock-temperature-timer
     (cancel-timer smallclock-temperature-timer))
   (setq smallclock-temperature-timer
-	(run-at-time 2 30 #'smallclock-get-temperature)))
+	(run-at-time 2 30 #'smallclock-get-temperature))
   (when smallclock-sleeve-timer
     (cancel-timer smallclock-sleeve-timer))
   (setq smallclock-sleeve-timer
@@ -173,8 +173,9 @@
   (blink-cursor-mode -1))
 
 (defun setup-smallclock ()
-  (fringe-mode 0)
+  (server-start)
   (switch-to-buffer (set-buffer (get-buffer-create "*smallclock*")))
+  (setq mode-line-format nil)
   (erase-buffer)
   (smallclock-mode)
   (start-smallclock))
@@ -321,7 +322,8 @@
 	      :font-weight "bold"
 	      :fill "#888"
     	      :font-family "futura")
-    (insert-image (svg-image svg))))
+    (insert-image (svg-image svg :width 720))
+    (goto-char (point-min))))
 
 (defun smallclock-light-on ()
   "Turn the light for the alarm smallclock monitor on."
@@ -336,6 +338,31 @@
   (let ((exec-path (cons (expand-file-name "~/src/eval-server.el/") exec-path)))
     (eval-at-async "lights" "rocket-sam" 8701
 		   '(tellstick-switch-room bedroom off))))
+
+(defvar smallclock-sensor-process nil)
+
+(defun smallclock-start-sensor ()
+  (with-current-buffer (get-buffer-create " *yocto*")
+    (setq smallclock-sensor-process
+	  (make-process
+	   :name "yocto"
+	   :buffer (current-buffer)
+	   :command (list (expand-file-name
+			   "yocto_light.py"
+			   (file-name-directory
+			    (find-library-name "smallclock"))))
+	   :filter (lambda (proc string)
+		     (with-current-buffer (process-buffer proc)
+		       (goto-char (point-max))
+		       (insert string)
+		       (when (and (bolp)
+				  (re-search-backward " \\([.0-9]\\) +lx" nil t))
+			 (let ((lx (string-to-number (match-string 1))))
+			   (erase-buffer)
+			   (smallclock-adjust-brightness lx)))))))))
+
+(defun smallclock-adjust-brightness (lx)
+  )
 
 (provide 'smallclock)
 
