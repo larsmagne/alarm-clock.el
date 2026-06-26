@@ -149,14 +149,6 @@
 	  (if-let ((digit (plist-get map last-command-event)))
 	      (concat smallclock-key-sequence digit)
 	    ""))))
-	    
-(defun smallclock-lights-on ()
-  (interactive)
-  (call-process "lights" nil (get-buffer-create " *lights*") nil "1"))
-
-(defun smallclock-lights-off ()
-  (interactive)
-  (call-process "lights" nil (get-buffer-create " *lights*") nil "0"))
 
 (defun smallclock-mode ()
   (interactive)
@@ -197,14 +189,14 @@
 (defun smallclock-decrease-volume ()
   (interactive)
   (setq smallclock-volume (max (- smallclock-volume 0.1) 0))
-  (smallclock-emacsclient (format "(jukebox-set-vol-volume %s \"bedroom\")"
-			     smallclock-volume)))
+  (eval-at "lights" "rocket-sam" 8705
+	   `(jukebox-set-vol-volume ,smallclock-volume "bedroom")))
 
 (defun smallclock-increase-volume ()
   (interactive)
   (setq smallclock-volume (min (+ smallclock-volume 0.1) 9))
-  (smallclock-emacsclient (format "(jukebox-set-vol-volume %s \"bedroom\")"
-			     smallclock-volume)))
+  (eval-at "lights" "rocket-sam" 8705
+	   `(jukebox-set-vol-volume ,smallclock-volume "bedroom")))
 
 (defvar smallclock-alarm nil)
 
@@ -235,8 +227,7 @@
       (setq smallclock-alarm 
 	    (run-at-time (smallclock-number-of-seconds-until time)
 			 nil #'smallclock-sound-alarm)))
-    (smallclock-display)
-    ))
+    (smallclock-display)))
 
 (defun smallclock-number-of-seconds-until (smallclock)
   (let ((seconds 0)
@@ -254,16 +245,45 @@
 		"--server-file=rocket-sam" 
 		"--eval" command))
 
+(defvar smallcontrol-alarm-process nil)
+(defvar smallcontrol-stop-alarm t)
+
 (defun smallclock-sound-alarm ()
-  (smallclock-emacsclient "(jukebox-volume-mute \"bedroom\")")
-  (smallclock-emacsclient "(jukebox-set-vol-volume 2 \"bedroom\")")
-  (sit-for 1)
-  (smallclock-emacsclient "(jukebox-ensure-playing)")
-  (smallclock-cancel-alarm))
+  (let ((volume 10)
+	func)
+    (setq smallcontrol-stop-alarm nil)
+    (setq func
+	  (lambda ()
+	    (call-process "amixer" nil nil nil
+			  "-c" "1" "sset" "PCM"
+			  (format "%d%%" volume))
+	    (cl-incf volume 10)
+	    (when (> volume 100)
+	      (setq volume 50))
+	    (setq smallcontrol-alarm-process
+		  (make-process
+		   :name "alarm"
+		   :buffer (get-buffer-create " *alarm*")
+		   :command (list "mpg123" "-o" "alsa" "-a" "plughw:1,0"
+				  (expand-file-name
+				   "alarm.mp3"
+				   (file-name-directory
+				    (find-library-name "smallclock"))))
+		   :sentinel
+		   (lambda (proc _status)
+		     (unless (process-live-p proc)
+		       (kill-buffer (process-buffer proc))
+		       (unless smallcontrol-stop-alarm
+			 (funcall func))))))))
+    (funcall func)))
   
 (defun smallclock-cancel-alarm ()
   (interactive)
   (setq smallclock-alarm-time "")
+  (setq smallcontrol-stop-alarm t)
+  (when smallcontrol-alarm-process
+    (delete-process smallcontrol-alarm-process))
+  (smallclock-display)
   (ignore-errors
     (cancel-timer smallclock-alarm)))
 
@@ -307,12 +327,16 @@
 (defun smallclock-light-on ()
   "Turn the light for the alarm smallclock monitor on."
   (interactive)
-  (eval-at "lights" "mosmallclock" 8700 '(tellstick-switch-id 46 on)))
+  (let ((exec-path (cons (expand-file-name "~/src/eval-server.el/") exec-path)))
+    (eval-at-async "lights" "rocket-sam" 8701
+		   '(tellstick-switch-room bedroom on))))
 
 (defun smallclock-light-off ()
   "Turn the light for the alarm smallclock monitor on."
   (interactive)
-  (eval-at "lights" "mosmallclock" 8700 '(tellstick-switch-id 46 off)))
+  (let ((exec-path (cons (expand-file-name "~/src/eval-server.el/") exec-path)))
+    (eval-at-async "lights" "rocket-sam" 8701
+		   '(tellstick-switch-room bedroom off))))
 
 (provide 'smallclock)
 
