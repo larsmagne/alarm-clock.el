@@ -174,12 +174,6 @@
 
 (defun setup-smallclock ()
   (fringe-mode 0)
-  (let ((system (car (split-string (system-name) "[.]"))))
-    (when (member system '("mosmallclock"))
-      (setq server-use-tcp t
-	    server-host (system-name)
-	    server-name system)
-      (server-start)))
   (switch-to-buffer (set-buffer (get-buffer-create "*smallclock*")))
   (erase-buffer)
   (smallclock-mode)
