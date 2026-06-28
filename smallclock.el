@@ -185,21 +185,28 @@
 
 (defun smallclock-pause ()
   (interactive)
-  (smallclock-emacsclient "(jukebox-pause)"))
+  (eval-at "lights" "rocket-sam" 8705
+	   `(jukebox-pause))
+  (setq smallclock-message
+	(cons 5 (format "Pause/Play"))))
 
-(defvar smallclock-volume 2)
+(defvar smallclock-volume 1)
 
 (defun smallclock-decrease-volume ()
   (interactive)
   (setq smallclock-volume (max (- smallclock-volume 0.1) 0))
   (eval-at "lights" "rocket-sam" 8705
-	   `(jukebox-set-vol-volume ,smallclock-volume "bedroom")))
+	   `(jukebox-set-vol-volume ,smallclock-volume "bedroom"))
+  (setq smallclock-message
+	(cons 5 (format "Volume: %.1f" smallclock-volume))))
 
 (defun smallclock-increase-volume ()
   (interactive)
   (setq smallclock-volume (min (+ smallclock-volume 0.1) 9))
   (eval-at "lights" "rocket-sam" 8705
-	   `(jukebox-set-vol-volume ,smallclock-volume "bedroom")))
+	   `(jukebox-set-vol-volume ,smallclock-volume "bedroom"))
+  (setq smallclock-message
+	(cons 5 (format "Volume: %.1f" smallclock-volume))))
 
 (defvar smallclock-alarm nil)
 (defvar smallclock-message nil)
@@ -229,13 +236,14 @@
 	(setq time "")))
     (setq smallclock-alarm-time time)
     (if (equal time "")
-	(setq smallclock-message
-	      (cons 5 (format "Invalid: %S" input)))
+	(when (cl-plusp (length input))
+	  (setq smallclock-message
+		(cons 5 (format "Invalid: %S" input))))
       (let ((when (smallclock-number-of-seconds-until time)))
 	(setq smallclock-alarm 
 	      (run-at-time when nil #'smallclock-sound-alarm)
 	      smallclock-message
-	      (cons 5 (format "(...il y a %s)"
+	      (cons 5 (format "(...en %s)"
 			      (cond
 			       ((< when 60)
 				(format "%ds" when))
@@ -304,6 +312,7 @@
   (setq smallcontrol-stop-alarm t)
   (when smallcontrol-alarm-process
     (delete-process smallcontrol-alarm-process))
+  (setq smallclock-message (cons 5 "Cancelled alarm"))
   (smallclock-display)
   (ignore-errors
     (cancel-timer smallclock-alarm)))
