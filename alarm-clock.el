@@ -1,4 +1,4 @@
-;;; smallclock.el -- a small Emacs alarm clock -*- lexical-binding: t -*-
+;;; alarm-clock.el -- a small Emacs alarm clock -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2026 Lars Magne Ingebrigtsen
 
@@ -7,12 +7,12 @@
 
 ;; This file is not part of GNU Emacs.
 
-;; smallclock.el is free software: you can redistribute it and/or modify
+;; alarm-clock.el is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
 ;; (at your option) any later version.
 
-;; smallclock.el is distributed in the hope that it will be useful,
+;; alarm-clock.el is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
@@ -31,47 +31,47 @@
 (require 'svg)
 (require 'eval-server)
 
-(defvar smallclock-temperature nil)
-(defvar smallclock-alarm-time "")
+(defvar alarm-clock-temperature nil)
+(defvar alarm-clock-alarm-time "")
 
-(defvar smallclock-alarm-colors '("#888" "#8f8"))
-(defvar smallclock-alarm-count 0)
+(defvar alarm-clock-alarm-colors '("#888" "#8f8"))
+(defvar alarm-clock-alarm-count 0)
 
-(defun smallclock-display ()
-  (with-current-buffer (get-buffer-create "*smallclock*")
+(defun alarm-clock-display ()
+  (with-current-buffer (get-buffer-create "*alarm-clock*")
     (erase-buffer)
-    (smallclock-make-svg (format-time-string "%H:%M")
-			 smallclock-alarm-time
-			 (if smallclock-temperature
-			     (format "%.1f°" smallclock-temperature)
+    (alarm-clock-make-svg (format-time-string "%H:%M")
+			 alarm-clock-alarm-time
+			 (if alarm-clock-temperature
+			     (format "%.1f°" alarm-clock-temperature)
 			   "no temp")
-			 smallclock-sleeve
+			 alarm-clock-sleeve
 			 720 720)
     (put-text-property (point-min) (point-max) 'keymap nil)))
 
-(defvar smallclock-timer nil)
-(defvar smallclock-temperature-timer nil)
-(defvar smallclock-sleeve-timer nil)
+(defvar alarm-clock-timer nil)
+(defvar alarm-clock-temperature-timer nil)
+(defvar alarm-clock-sleeve-timer nil)
 
-(defun start-smallclock ()
-  (when smallclock-timer
-    (cancel-timer smallclock-timer))
-  (setq smallclock-timer (run-at-time 1 1 #'smallclock-display))
-  (when smallclock-temperature-timer
-    (cancel-timer smallclock-temperature-timer))
-  (setq smallclock-temperature-timer
-	(run-at-time 2 30 #'smallclock-get-temperature))
-  (when smallclock-sleeve-timer
-    (cancel-timer smallclock-sleeve-timer))
-  (setq smallclock-sleeve-timer
-	(run-at-time 3 30 #'smallclock-get-sleeve)))
+(defun start-alarm-clock ()
+  (when alarm-clock-timer
+    (cancel-timer alarm-clock-timer))
+  (setq alarm-clock-timer (run-at-time 1 1 #'alarm-clock-display))
+  (when alarm-clock-temperature-timer
+    (cancel-timer alarm-clock-temperature-timer))
+  (setq alarm-clock-temperature-timer
+	(run-at-time 2 30 #'alarm-clock-get-temperature))
+  (when alarm-clock-sleeve-timer
+    (cancel-timer alarm-clock-sleeve-timer))
+  (setq alarm-clock-sleeve-timer
+	(run-at-time 3 30 #'alarm-clock-get-sleeve)))
 
-(defvar smallclock-poll-process nil)
+(defvar alarm-clock-poll-process nil)
 
-(defun smallclock-get-temperature ()
-  (when smallclock-poll-process
-    (delete-process smallclock-poll-process))
-  (setq smallclock-poll-process
+(defun alarm-clock-get-temperature ()
+  (when alarm-clock-poll-process
+    (delete-process alarm-clock-poll-process))
+  (setq alarm-clock-poll-process
 	(make-process
 	 :name "get-temperature"
 	 :buffer (generate-new-buffer " *temperature*")
@@ -85,19 +85,19 @@
 	     (with-current-buffer (process-buffer proc)
 	       (goto-char (point-min))
 	       (when (re-search-forward "INTEGER: \\([0-9]+\\)" nil t)
-		 (setq smallclock-temperature
+		 (setq alarm-clock-temperature
 		       (/ (string-to-number (match-string 1)) 10.0)))
 	       (kill-buffer (current-buffer))))))))
 
-(defvar smallclock-sleeve-process nil)
-(defvar smallclock-sleeve nil)
+(defvar alarm-clock-sleeve-process nil)
+(defvar alarm-clock-sleeve nil)
   
-(defun smallclock-get-sleeve ()
-  (when smallclock-poll-process
-    (delete-process smallclock-poll-process))
+(defun alarm-clock-get-sleeve ()
+  (when alarm-clock-poll-process
+    (delete-process alarm-clock-poll-process))
   (with-current-buffer (generate-new-buffer " *sleeve*")
     (set-buffer-multibyte nil)
-    (setq smallclock-poll-process
+    (setq alarm-clock-poll-process
 	  (make-process
 	   :name "get-sleeve"
 	   :buffer (current-buffer)
@@ -107,37 +107,37 @@
 	   (lambda (proc _status)
 	     (unless (process-live-p proc)
 	       (with-current-buffer (process-buffer proc)
-		 (setq smallclock-sleeve (buffer-string))
+		 (setq alarm-clock-sleeve (buffer-string))
 		 (kill-buffer (current-buffer)))))))))
 
-(defvar-keymap smallclock-mode-map
-  "d" #'smallclock-key
-  "h" #'smallclock-key
-  "l" #'smallclock-key
+(defvar-keymap alarm-clock-mode-map
+  "d" #'alarm-clock-key
+  "h" #'alarm-clock-key
+  "l" #'alarm-clock-key
 
-  "c" #'smallclock-key
-  "g" #'smallclock-key
-  "k" #'smallclock-key
+  "c" #'alarm-clock-key
+  "g" #'alarm-clock-key
+  "k" #'alarm-clock-key
 
-  "b" #'smallclock-key
-  "f" #'smallclock-key
-  "j" #'smallclock-key
+  "b" #'alarm-clock-key
+  "f" #'alarm-clock-key
+  "j" #'alarm-clock-key
 
-  "e" #'smallclock-key
+  "e" #'alarm-clock-key
 
-  "i" #'smallclock-set-alarm
+  "i" #'alarm-clock-set-alarm
   
-  "a" #'smallclock-cancel-alarm
-  "4" #'smallclock-light-off
-  "6" #'smallclock-light-on
+  "a" #'alarm-clock-cancel-alarm
+  "4" #'alarm-clock-light-off
+  "6" #'alarm-clock-light-on
 
-  "1" #'smallclock-decrease-volume
-  "3" #'smallclock-increase-volume
-  "2" #'smallclock-pause)
+  "1" #'alarm-clock-decrease-volume
+  "3" #'alarm-clock-increase-volume
+  "2" #'alarm-clock-pause)
 
-(defvar smallclock-key-sequence "")
+(defvar alarm-clock-key-sequence "")
 
-(defun smallclock-key ()
+(defun alarm-clock-key ()
   "Record a key for the alarm."
   (interactive)
   (let ((map '( ?d "7"
@@ -153,18 +153,18 @@
 		?j "3"
 	            
 		?e "0")))
-    (setq smallclock-key-sequence    
+    (setq alarm-clock-key-sequence    
 	  (if-let ((digit (plist-get map last-command-event)))
-	      (concat smallclock-key-sequence digit)
+	      (concat alarm-clock-key-sequence digit)
 	    ""))))
 
-(defun smallclock-mode ()
+(defun alarm-clock-mode ()
   (interactive)
-  (setq major-mode 'smallclock-mode)
-  (setq mode-name "Smallclock")
-  (use-local-map smallclock-mode-map)
+  (setq major-mode 'alarm-clock-mode)
+  (setq mode-name "Alarm-Clock")
+  (use-local-map alarm-clock-mode-map)
   (setq mode-line-buffer-identification
-	'("Smallclock"))
+	'("Alarm-Clock"))
   (setq truncate-lines t)
   (buffer-disable-undo)
   (set-face-background 'fringe "black")
@@ -175,46 +175,46 @@
 	       default-frame-alist))
   (blink-cursor-mode -1))
 
-(defun setup-smallclock ()
+(defun setup-alarm-clock ()
   (server-start)
-  (switch-to-buffer (set-buffer (get-buffer-create "*smallclock*")))
+  (switch-to-buffer (set-buffer (get-buffer-create "*alarm-clock*")))
   (setq mode-line-format nil)
   (erase-buffer)
-  (smallclock-mode)
-  (start-smallclock))
+  (alarm-clock-mode)
+  (start-alarm-clock))
 
-(defun smallclock-pause ()
+(defun alarm-clock-pause ()
   (interactive)
   (eval-at "lights" "rocket-sam" 8705
 	   `(jukebox-pause))
-  (setq smallclock-message
+  (setq alarm-clock-message
 	(cons 5 (format "Pause/Play"))))
 
-(defvar smallclock-volume 1)
+(defvar alarm-clock-volume 1)
 
-(defun smallclock-decrease-volume ()
+(defun alarm-clock-decrease-volume ()
   (interactive)
-  (setq smallclock-volume (max (- smallclock-volume 0.1) 0))
+  (setq alarm-clock-volume (max (- alarm-clock-volume 0.1) 0))
   (eval-at "lights" "rocket-sam" 8705
-	   `(jukebox-set-vol-volume ,smallclock-volume "bedroom"))
-  (setq smallclock-message
-	(cons 5 (format "Volume: %.1f" smallclock-volume))))
+	   `(jukebox-set-vol-volume ,alarm-clock-volume "bedroom"))
+  (setq alarm-clock-message
+	(cons 5 (format "Volume: %.1f" alarm-clock-volume))))
 
-(defun smallclock-increase-volume ()
+(defun alarm-clock-increase-volume ()
   (interactive)
-  (setq smallclock-volume (min (+ smallclock-volume 0.1) 9))
+  (setq alarm-clock-volume (min (+ alarm-clock-volume 0.1) 9))
   (eval-at "lights" "rocket-sam" 8705
-	   `(jukebox-set-vol-volume ,smallclock-volume "bedroom"))
-  (setq smallclock-message
-	(cons 5 (format "Volume: %.1f" smallclock-volume))))
+	   `(jukebox-set-vol-volume ,alarm-clock-volume "bedroom"))
+  (setq alarm-clock-message
+	(cons 5 (format "Volume: %.1f" alarm-clock-volume))))
 
-(defvar smallclock-alarm nil)
-(defvar smallclock-message nil)
+(defvar alarm-clock-alarm nil)
+(defvar alarm-clock-message nil)
 
-(defun smallclock-set-alarm ()
+(defun alarm-clock-set-alarm ()
   (interactive)
-  (let ((time smallclock-key-sequence)
-	(input smallclock-key-sequence))
+  (let ((time alarm-clock-key-sequence)
+	(input alarm-clock-key-sequence))
     (setq time
 	  (cond
 	   ((= (length time) 1)
@@ -226,23 +226,23 @@
 	   ((= (length time) 4)
 	    (format "%s:%s" (substring time 0 2) (substring time 2)))
 	   (t "")))
-    (smallclock-cancel-alarm)
-    (setq smallclock-key-sequence "")
+    (alarm-clock-cancel-alarm)
+    (setq alarm-clock-key-sequence "")
     ;; Check whether the alarm clock is a valid time.
     (let ((bits (mapcar #'string-to-number (split-string time ":"))))
       (unless (<= 0 (car bits) 23)
 	(setq time ""))
       (unless (<= 0 (car bits) 59)
 	(setq time "")))
-    (setq smallclock-alarm-time time)
+    (setq alarm-clock-alarm-time time)
     (if (equal time "")
 	(when (cl-plusp (length input))
-	  (setq smallclock-message
+	  (setq alarm-clock-message
 		(cons 5 (format "Invalid: %S" input))))
-      (let ((when (smallclock-number-of-seconds-until time)))
-	(setq smallclock-alarm 
-	      (run-at-time when nil #'smallclock-sound-alarm)
-	      smallclock-message
+      (let ((when (alarm-clock-number-of-seconds-until time)))
+	(setq alarm-clock-alarm 
+	      (run-at-time when nil #'alarm-clock-sound-alarm)
+	      alarm-clock-message
 	      (cons 5 (format "(...en %s)"
 			      (cond
 			       ((< when 60)
@@ -253,20 +253,20 @@
 				(format "%dh et %dm"
 					(/ when 3600)
 					(/ (% when 3600) 60)))))))))
-    (smallclock-display)))
+    (alarm-clock-display)))
 
-(defun smallclock-number-of-seconds-until (smallclock)
+(defun alarm-clock-number-of-seconds-until (alarm-clock)
   (let ((seconds 0)
 	(now (time-to-seconds (current-time))))
-    (while (not (string= smallclock (format-time-string "%H:%M"
+    (while (not (string= alarm-clock (format-time-string "%H:%M"
 							(seconds-to-time (+ seconds now)))))
       (cl-incf seconds 40))
-    (while (string= smallclock (format-time-string "%H:%M"
+    (while (string= alarm-clock (format-time-string "%H:%M"
 						   (seconds-to-time (+ seconds now))))
       (cl-decf seconds))
     seconds))
 
-(defun smallclock-emacsclient (command)
+(defun alarm-clock-emacsclient (command)
   (call-process "emacsclient" nil nil nil
 		"--server-file=rocket-sam" 
 		"--eval" command))
@@ -274,11 +274,11 @@
 (defvar smallcontrol-alarm-process nil)
 (defvar smallcontrol-stop-alarm t)
 
-(defun smallclock-sound-alarm ()
+(defun alarm-clock-sound-alarm ()
   (let ((volume 10)
 	func)
     (setq smallcontrol-stop-alarm nil
-	  smallclock-alarm-count 0)
+	  alarm-clock-alarm-count 0)
     (setq func
 	  (lambda ()
 	    (call-process "amixer" nil nil nil
@@ -295,29 +295,29 @@
 				  (expand-file-name
 				   "alarm.mp3"
 				   (file-name-directory
-				    (find-library-name "smallclock"))))
+				    (find-library-name "alarm-clock"))))
 		   :sentinel
 		   (lambda (proc _status)
 		     (unless (process-live-p proc)
 		       (kill-buffer (process-buffer proc))
 		       (when (and (not smallcontrol-stop-alarm)
 				  ;; Stop after running for two minutes.
-				  (< smallclock-alarm-count 120))
+				  (< alarm-clock-alarm-count 120))
 			 (funcall func))))))))
     (funcall func)))
   
-(defun smallclock-cancel-alarm ()
+(defun alarm-clock-cancel-alarm ()
   (interactive)
-  (setq smallclock-alarm-time "")
+  (setq alarm-clock-alarm-time "")
   (setq smallcontrol-stop-alarm t)
   (when smallcontrol-alarm-process
     (delete-process smallcontrol-alarm-process))
-  (setq smallclock-message (cons 5 "Cancelled alarm"))
-  (smallclock-display)
+  (setq alarm-clock-message (cons 5 "Cancelled alarm"))
+  (alarm-clock-display)
   (ignore-errors
-    (cancel-timer smallclock-alarm)))
+    (cancel-timer alarm-clock-alarm)))
 
-(defun smallclock-make-svg (time alarm temperature sleeve width height)
+(defun alarm-clock-make-svg (time alarm temperature sleeve width height)
   (let ((svg (svg-create width height)))
     (svg-rectangle svg 0 0 width height
 		   :fill "#000000")
@@ -351,12 +351,12 @@
 	      :text-anchor "middle"
 	      :font-weight "bold"
 	      :fill (if smallcontrol-stop-alarm
-			(car smallclock-alarm-colors)
-		      (elt smallclock-alarm-colors
-			   (mod (cl-incf smallclock-alarm-count) 2)))
+			(car alarm-clock-alarm-colors)
+		      (elt alarm-clock-alarm-colors
+			   (mod (cl-incf alarm-clock-alarm-count) 2)))
     	      :font-family "futura")
-    (when smallclock-message
-      (svg-text svg (cdr smallclock-message)
+    (when alarm-clock-message
+      (svg-text svg (cdr alarm-clock-message)
 		:x (- (/ width 2.0) 210)
 		:y 500
 		:font-size 80
@@ -365,38 +365,38 @@
 		:transform "rotate(-30)"
 		:fill "red"
     		:font-family "futura")
-      (setcar smallclock-message (1- (car smallclock-message)))
-      (when (< (car smallclock-message) 0)
-	(setq smallclock-message nil)))
+      (setcar alarm-clock-message (1- (car alarm-clock-message)))
+      (when (< (car alarm-clock-message) 0)
+	(setq alarm-clock-message nil)))
     (insert-image (svg-image svg :width 720))
     (goto-char (point-min))))
 
-(defun smallclock-light-on ()
-  "Turn the light for the alarm smallclock monitor on."
+(defun alarm-clock-light-on ()
+  "Turn the light for the alarm alarm-clock monitor on."
   (interactive)
   (let ((exec-path (cons (expand-file-name "~/src/eval-server.el/") exec-path)))
     (eval-at-async "lights" "rocket-sam" 8701
 		   '(tellstick-switch-room bedroom on))))
 
-(defun smallclock-light-off ()
-  "Turn the light for the alarm smallclock monitor on."
+(defun alarm-clock-light-off ()
+  "Turn the light for the alarm alarm-clock monitor on."
   (interactive)
   (let ((exec-path (cons (expand-file-name "~/src/eval-server.el/") exec-path)))
     (eval-at-async "lights" "rocket-sam" 8701
 		   '(tellstick-switch-room bedroom off))))
 
-(defvar smallclock-sensor-process nil)
+(defvar alarm-clock-sensor-process nil)
 
-(defun smallclock-start-sensor ()
+(defun alarm-clock-start-sensor ()
   (with-current-buffer (get-buffer-create " *yocto*")
-    (setq smallclock-sensor-process
+    (setq alarm-clock-sensor-process
 	  (make-process
 	   :name "yocto"
 	   :buffer (current-buffer)
 	   :command (list (expand-file-name
 			   "yocto_light.py"
 			   (file-name-directory
-			    (find-library-name "smallclock"))))
+			    (find-library-name "alarm-clock"))))
 	   :filter (lambda (proc string)
 		     (with-current-buffer (process-buffer proc)
 		       (goto-char (point-max))
@@ -405,11 +405,11 @@
 				  (re-search-backward " \\([.0-9]\\) +lx" nil t))
 			 (let ((lx (string-to-number (match-string 1))))
 			   (erase-buffer)
-			   (smallclock-adjust-brightness lx)))))))))
+			   (alarm-clock-adjust-brightness lx)))))))))
 
-(defun smallclock-adjust-brightness (_lx)
+(defun alarm-clock-adjust-brightness (_lx)
   )
 
-(provide 'smallclock)
+(provide 'alarm-clock)
 
-;;; smallclock.el ends here
+;;; alarm-clock.el ends here
