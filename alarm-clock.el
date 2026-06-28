@@ -155,11 +155,14 @@
 		?j "3"
 	            
 		?e "0")))
-    (setq alarm-clock-key-sequence    
-	  (if-let ((digit (plist-get map last-command-event)))
-	      (concat alarm-clock-key-sequence digit)
-	    ""))
-    (alarm-clock-message alarm-clock-key-sequence)))
+    (if (not alarm-clock-stop-alarm)
+	;; If the alarm is sounding, hitting any key will cancel it.
+	(alarm-clock-cancel-alarm)
+      (setq alarm-clock-key-sequence    
+	    (if-let ((digit (plist-get map last-command-event)))
+		(concat alarm-clock-key-sequence digit)
+	      ""))
+      (alarm-clock-message alarm-clock-key-sequence))))
 
 (defun alarm-clock-mode ()
   (interactive)
@@ -269,13 +272,13 @@
 		"--server-file=rocket-sam" 
 		"--eval" command))
 
-(defvar smallcontrol-alarm-process nil)
-(defvar smallcontrol-stop-alarm t)
+(defvar alarm-clock-alarm-process nil)
+(defvar alarm-clock-stop-alarm t)
 
 (defun alarm-clock-sound-alarm ()
   (let ((volume 10)
 	func)
-    (setq smallcontrol-stop-alarm nil
+    (setq alarm-clock-stop-alarm nil
 	  alarm-clock-alarm-count 0)
     (setq func
 	  (lambda ()
@@ -285,7 +288,7 @@
 	    (cl-incf volume 10)
 	    (when (> volume 100)
 	      (setq volume 50))
-	    (setq smallcontrol-alarm-process
+	    (setq alarm-clock-alarm-process
 		  (make-process
 		   :name "alarm"
 		   :buffer (get-buffer-create " *alarm*")
@@ -298,7 +301,7 @@
 		   (lambda (proc _status)
 		     (unless (process-live-p proc)
 		       (kill-buffer (process-buffer proc))
-		       (when (and (not smallcontrol-stop-alarm)
+		       (when (and (not alarm-clock-stop-alarm)
 				  ;; Stop after running for two minutes.
 				  (< alarm-clock-alarm-count 120))
 			 (funcall func))))))))
@@ -307,9 +310,9 @@
 (defun alarm-clock-cancel-alarm ()
   (interactive)
   (setq alarm-clock-alarm-time "")
-  (setq smallcontrol-stop-alarm t)
-  (when smallcontrol-alarm-process
-    (delete-process smallcontrol-alarm-process))
+  (setq alarm-clock-stop-alarm t)
+  (when alarm-clock-alarm-process
+    (delete-process alarm-clock-alarm-process))
   (alarm-clock-message "Cancelled alarm")
   (ignore-errors
     (cancel-timer alarm-clock-alarm)))
@@ -347,7 +350,7 @@
 	      :font-size 100
 	      :text-anchor "middle"
 	      :font-weight "bold"
-	      :fill (if smallcontrol-stop-alarm
+	      :fill (if alarm-clock-stop-alarm
 			(car alarm-clock-alarm-colors)
 		      (elt alarm-clock-alarm-colors
 			   (mod (cl-incf alarm-clock-alarm-count) 2)))
