@@ -158,7 +158,8 @@
     (setq alarm-clock-key-sequence    
 	  (if-let ((digit (plist-get map last-command-event)))
 	      (concat alarm-clock-key-sequence digit)
-	    ""))))
+	    ""))
+    (alarm-clock-message alarm-clock-key-sequence)))
 
 (defun alarm-clock-mode ()
   (interactive)
@@ -189,26 +190,23 @@
   (interactive)
   (eval-at "lights" "rocket-sam" 8705
 	   `(jukebox-pause))
-  (setq alarm-clock-message
-	(cons 5 (format "Pause/Play"))))
+  (alarm-clock-message "Pause/Play"))
 
 (defvar alarm-clock-volume 1)
 
 (defun alarm-clock-decrease-volume ()
   (interactive)
   (setq alarm-clock-volume (max (- alarm-clock-volume 0.1) 0))
+  (alarm-clock-message (format "Volume: %.1f" alarm-clock-volume))
   (eval-at "lights" "rocket-sam" 8705
-	   `(jukebox-set-vol-volume ,alarm-clock-volume "bedroom"))
-  (setq alarm-clock-message
-	(cons 5 (format "Volume: %.1f" alarm-clock-volume))))
+	   `(jukebox-set-vol-volume ,alarm-clock-volume "bedroom")))
 
 (defun alarm-clock-increase-volume ()
   (interactive)
   (setq alarm-clock-volume (min (+ alarm-clock-volume 0.1) 9))
+  (alarm-clock-message (format "Volume: %.1f" alarm-clock-volume))
   (eval-at "lights" "rocket-sam" 8705
-	   `(jukebox-set-vol-volume ,alarm-clock-volume "bedroom"))
-  (setq alarm-clock-message
-	(cons 5 (format "Volume: %.1f" alarm-clock-volume))))
+	   `(jukebox-set-vol-volume ,alarm-clock-volume "bedroom")))
 
 (defvar alarm-clock-alarm nil)
 (defvar alarm-clock-message nil)
@@ -239,23 +237,21 @@
     (setq alarm-clock-alarm-time time)
     (if (equal time "")
 	(when (cl-plusp (length input))
-	  (setq alarm-clock-message
-		(cons 5 (format "Invalid: %S" input))))
+	  (alarm-clock-message (format "Invalid: %S" input)))
       (let ((when (alarm-clock-number-of-seconds-until time)))
 	(setq alarm-clock-alarm 
-	      (run-at-time when nil #'alarm-clock-sound-alarm)
-	      alarm-clock-message
-	      (cons 5 (format "(...en %s)"
-			      (cond
-			       ((< when 60)
-				(format "%ds" when))
-			       ((< when 3600)
-				(format "%dm" (/ when 60)))
-			       (t
-				(format "%dh et %dm"
-					(/ when 3600)
-					(/ (% when 3600) 60)))))))))
-    (alarm-clock-display)))
+	      (run-at-time when nil #'alarm-clock-sound-alarm))
+	(alarm-clock-message
+	 (format "(...en %s)"
+		 (cond
+		  ((< when 60)
+		   (format "%ds" when))
+		  ((< when 3600)
+		   (format "%dm" (/ when 60)))
+		  (t
+		   (format "%dh et %dm"
+			   (/ when 3600)
+			   (/ (% when 3600) 60))))))))))
 
 (defun alarm-clock-number-of-seconds-until (alarm-clock)
   (let ((seconds 0)
@@ -314,8 +310,7 @@
   (setq smallcontrol-stop-alarm t)
   (when smallcontrol-alarm-process
     (delete-process smallcontrol-alarm-process))
-  (setq alarm-clock-message (cons 5 "Cancelled alarm"))
-  (alarm-clock-display)
+  (alarm-clock-message "Cancelled alarm")
   (ignore-errors
     (cancel-timer alarm-clock-alarm)))
 
@@ -376,19 +371,23 @@
 (defun alarm-clock-light-on ()
   "Turn the light for the alarm alarm-clock monitor on."
   (interactive)
+  (alarm-clock-message "Lights on")
   (let ((exec-path (cons (expand-file-name "~/src/eval-server.el/") exec-path)))
     (eval-at-async "lights" "rocket-sam" 8701
-		   '(tellstick-switch-room bedroom on)))
-  (setq alarm-clock-message (cons 5 "Lights on")))
+		   '(tellstick-switch-room bedroom on))))
 
 (defun alarm-clock-light-off ()
   "Turn the light for the alarm alarm-clock monitor on."
   (interactive)
+  (alarm-clock-message "Lights off")
   (let ((exec-path (cons (expand-file-name "~/src/eval-server.el/")
 			 exec-path)))
     (eval-at-async "lights" "rocket-sam" 8701
-		   '(tellstick-switch-room bedroom off)))
-  (setq alarm-clock-message (cons 5 "Lights off")))
+		   '(tellstick-switch-room bedroom off))))
+
+(defun alarm-clock-message (string)
+  (setq alarm-clock-message (cons 5 string))
+  (alarm-clock-display))
 
 (defvar alarm-clock-sensor-process nil)
 
