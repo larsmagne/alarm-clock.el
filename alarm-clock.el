@@ -374,7 +374,7 @@
   (alarm-clock-message "Lights on")
   (let ((exec-path (cons (expand-file-name "~/src/eval-server.el/") exec-path)))
     (eval-at-async "lights" "rocket-sam" 8701
-		   '(tellstick-switch-room bedroom on))))
+		   '(tellstick-switch-room room-bedroom on))))
 
 (defun alarm-clock-light-off ()
   "Turn the light for the alarm alarm-clock monitor on."
@@ -383,7 +383,7 @@
   (let ((exec-path (cons (expand-file-name "~/src/eval-server.el/")
 			 exec-path)))
     (eval-at-async "lights" "rocket-sam" 8701
-		   '(tellstick-switch-room bedroom off))))
+		   '(tellstick-switch-room room-bedroom off))))
 
 (defun alarm-clock-message (string)
   (setq alarm-clock-message (cons 5 string))
