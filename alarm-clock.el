@@ -378,14 +378,17 @@
   (interactive)
   (let ((exec-path (cons (expand-file-name "~/src/eval-server.el/") exec-path)))
     (eval-at-async "lights" "rocket-sam" 8701
-		   '(tellstick-switch-room bedroom on))))
+		   '(tellstick-switch-room bedroom on)))
+  (setq alarm-clock-message (cons 5 "Lights on")))
 
 (defun alarm-clock-light-off ()
   "Turn the light for the alarm alarm-clock monitor on."
   (interactive)
-  (let ((exec-path (cons (expand-file-name "~/src/eval-server.el/") exec-path)))
+  (let ((exec-path (cons (expand-file-name "~/src/eval-server.el/")
+			 exec-path)))
     (eval-at-async "lights" "rocket-sam" 8701
-		   '(tellstick-switch-room bedroom off))))
+		   '(tellstick-switch-room bedroom off)))
+  (setq alarm-clock-message (cons 5 "Lights off")))
 
 (defvar alarm-clock-sensor-process nil)
 
