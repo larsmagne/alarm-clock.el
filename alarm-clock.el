@@ -128,8 +128,10 @@
   "i" #'alarm-clock-set-alarm
   
   "a" #'alarm-clock-cancel-alarm
+
   "4" #'alarm-clock-light-off
   "6" #'alarm-clock-light-on
+  "5" #'ignore
 
   "1" #'alarm-clock-decrease-volume
   "3" #'alarm-clock-increase-volume
