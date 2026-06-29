@@ -417,6 +417,15 @@
 (defun alarm-clock-adjust-brightness (_lx)
   )
 
+(defun alarm-clock-reposition ()
+  (interactive)
+  (let ((frame-resize-pixelwise t))
+    (set-frame-position (selected-frame) 0 0)
+    (set-frame-width (selected-frame) 820 nil t)
+    (set-frame-height (selected-frame) 820 nil t))
+  ;; Also remove the mouse pointer.
+  (start-process "unclutter" nil "unclutter"))
+
 (provide 'alarm-clock)
 
 ;;; alarm-clock.el ends here
