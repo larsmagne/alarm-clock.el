@@ -64,7 +64,8 @@
   (when alarm-clock-sleeve-timer
     (cancel-timer alarm-clock-sleeve-timer))
   (setq alarm-clock-sleeve-timer
-	(run-at-time 3 30 #'alarm-clock-get-sleeve)))
+	(run-at-time 3 30 #'alarm-clock-get-sleeve))
+  (alarm-clock-start-sensor))
 
 (defvar alarm-clock-poll-process nil)
 
@@ -317,6 +318,8 @@
   (ignore-errors
     (cancel-timer alarm-clock-alarm)))
 
+(defvar alarm-clock-dim 0)
+
 (defun alarm-clock-make-svg (time alarm temperature sleeve width height)
   (let ((svg (svg-create width height)))
     (svg-rectangle svg 0 0 width height
@@ -368,6 +371,10 @@
       (setcar alarm-clock-message (1- (car alarm-clock-message)))
       (when (< (car alarm-clock-message) 0)
 	(setq alarm-clock-message nil)))
+    (when (> alarm-clock-dim 0)
+      (svg-rectangle svg 0 0 width height
+		     :fill "#000000"
+		     :opacity alarm-clock-dim))
     (insert-image (svg-image svg :width 720))
     (goto-char (point-min))))
 
@@ -395,6 +402,8 @@
 (defvar alarm-clock-sensor-process nil)
 
 (defun alarm-clock-start-sensor ()
+  (when alarm-clock-sensor-process
+    (delete-process alarm-clock-sensor-process))
   (with-current-buffer (get-buffer-create " *yocto*")
     (setq alarm-clock-sensor-process
 	  (make-process
@@ -409,12 +418,17 @@
 		       (goto-char (point-max))
 		       (insert string)
 		       (when (and (bolp)
-				  (re-search-backward " \\([.0-9]\\) +lx" nil t))
+				  (re-search-backward " \\([.0-9]+\\) +lx" nil t))
 			 (let ((lx (string-to-number (match-string 1))))
 			   (erase-buffer)
 			   (alarm-clock-adjust-brightness lx)))))))))
 
-(defun alarm-clock-adjust-brightness (_lx)
+(defun alarm-clock-adjust-brightness (lx)
+  (setq alarm-clock-dim
+	(if (> lx 16)
+	    0
+	  (- 0.7 (/ lx 32.0))))
+  ;;(message "lx: %s dim: %s" lx alarm-clock-dim)
   )
 
 (defun alarm-clock-reposition ()
