@@ -30,6 +30,7 @@
 (require 'cl-lib)
 (require 'svg)
 (require 'eval-server)
+(require 'find-func)
 
 (defvar alarm-clock-temperature nil)
 (defvar alarm-clock-alarm-time "")
@@ -433,12 +434,13 @@
 
 (defun alarm-clock-reposition ()
   (interactive)
-  (let ((frame-resize-pixelwise t))
-    (set-frame-position (selected-frame) 0 0)
-    (set-frame-width (selected-frame) 820 nil t)
-    (set-frame-height (selected-frame) 820 nil t))
-  ;; Also remove the mouse pointer.
-  (start-process "unclutter" nil "unclutter"))
+  (run-at-time
+   5 nil
+   (lambda ()
+     (let ((frame-resize-pixelwise t))
+       (set-frame-position (selected-frame) 0 0)
+       (set-frame-width (selected-frame) 820 nil t)
+       (set-frame-height (selected-frame) 820 nil t)))))
 
 (provide 'alarm-clock)
 
