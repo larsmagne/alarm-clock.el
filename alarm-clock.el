@@ -133,7 +133,7 @@
 
   "4" #'alarm-clock-light-off
   "6" #'alarm-clock-light-on
-  "5" #'ignore
+  "5" #'alarm-clock-night-night
 
   "1" #'alarm-clock-decrease-volume
   "3" #'alarm-clock-increase-volume
@@ -215,6 +215,7 @@
 
 (defvar alarm-clock-alarm nil)
 (defvar alarm-clock-message nil)
+(defvar alarm-clock-previous-key-sequence nil)
 
 (defun alarm-clock-set-alarm ()
   (interactive)
@@ -245,7 +246,8 @@
 	  (alarm-clock-message (format "Invalid: %S" input)))
       (let ((when (alarm-clock-number-of-seconds-until time)))
 	(setq alarm-clock-alarm 
-	      (run-at-time when nil #'alarm-clock-sound-alarm))
+	      (run-at-time when nil #'alarm-clock-sound-alarm)
+	      alarm-clock-previous-key-sequence input)
 	(alarm-clock-message
 	 (format "(...en %s)"
 		 (cond
@@ -441,6 +443,17 @@
        (set-frame-position (selected-frame) 0 0)
        (set-frame-width (selected-frame) 820 nil t)
        (set-frame-height (selected-frame) 820 nil t)))))
+
+(defun alarm-clock-night-night ()
+  (if (not alarm-clock-previous-key-sequence)
+      (alarm-clock-message "No previous alarm")
+    (setq alarm-clock-key-sequence alarm-clock-previous-key-sequence)
+    (alarm-clock-set-alarm))
+  ;; Turn the lights in the flat off.
+  (let ((exec-path (cons (expand-file-name "~/src/eval-server.el/")
+			 exec-path)))
+    (eval-at-async "lights" "rocket-sam" 8705
+		   '(jukebox-pause-and-flat-off))))
 
 (provide 'alarm-clock)
 
