@@ -66,7 +66,8 @@
     (cancel-timer alarm-clock-sleeve-timer))
   (setq alarm-clock-sleeve-timer
 	(run-at-time 3 30 #'alarm-clock-get-sleeve))
-  (alarm-clock-start-sensor))
+  (alarm-clock-start-sensor)
+  (run-at-time 10 10 #'alarm-clock-check-network))
 
 (defvar alarm-clock-poll-process nil)
 
@@ -454,6 +455,23 @@
 			 exec-path)))
     (eval-at-async "lights" "rocket-sam" 8705
 		   '(jukebox-pause-and-flat-off))))
+
+(defvar alarm-clock-network-failures 0)
+
+(defun alarm-clock-check-network ()
+  (make-process
+   :name "ping"
+   :buffer nil
+   :command (list "ping" "-c" "1" "-W" "1" "192.168.1.46")
+   :sentinel 
+   (lambda (proc event)
+     (when (string-prefix-p "finished" event)
+       (if (zerop (process-exit-status proc))
+	   (setq alarm-clock-network-failures 0)
+	 ;; Network has been down for a minute.
+	 (when (> (cl-incf alarm-clock-network-failures) 6)
+	   (start-process "nmcli" nil "nmcli" "con" "up" "Beige")
+	   (setq alarm-clock-network-failures 0)))))))
 
 (provide 'alarm-clock)
 
