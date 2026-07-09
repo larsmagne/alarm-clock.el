@@ -67,7 +67,8 @@
   (setq alarm-clock-sleeve-timer
 	(run-at-time 3 30 #'alarm-clock-get-sleeve))
   (alarm-clock-start-sensor)
-  (run-at-time 10 10 #'alarm-clock-check-network))
+  ;;(run-at-time 10 10 #'alarm-clock-check-network)
+  )
 
 (defvar alarm-clock-poll-process nil)
 
