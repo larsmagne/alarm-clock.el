@@ -486,6 +486,22 @@
     (eval-at-async "lights" "rocket-sam" 8705
 		   '(jukebox-pause-and-flat-off))))
 
+(defun alarm-clock-flat-off ()
+  (alarm-clock-message "Flat off")
+  ;; Turn the lights in the flat off.
+  (let ((exec-path (cons (expand-file-name "~/src/eval-server.el/")
+			 exec-path)))
+    (eval-at-async "lights" "rocket-sam" 8705
+		   '(jukebox-flat-off))))
+
+(defun alarm-clock-flat-off-not-office ()
+  (alarm-clock-message "Flat off (not office)")
+  ;; Turn the lights in the flat off.
+  (let ((exec-path (cons (expand-file-name "~/src/eval-server.el/")
+			 exec-path)))
+    (eval-at-async "lights" "rocket-sam" 8705
+		   '(jukebox-flat-off-not-office))))
+
 (defvar alarm-clock-network-failures 0)
 
 (defun alarm-clock-check-network ()
