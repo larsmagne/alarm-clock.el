@@ -176,14 +176,7 @@
   (setq mode-line-buffer-identification
 	'("Alarm-Clock"))
   (setq truncate-lines t)
-  (buffer-disable-undo)
-  (set-face-background 'fringe "black")
-  (setq default-frame-alist
-	(nconc (list '(mouse-color . "black")
-		     '(cursor-type . box)
-		     '(cursor-color . "black"))
-	       default-frame-alist))
-  (blink-cursor-mode -1))
+  (buffer-disable-undo))
 
 (defun setup-alarm-clock ()
   (server-start)
@@ -191,6 +184,13 @@
   (setq mode-line-format nil)
   (erase-buffer)
   (alarm-clock-mode)
+  (set-face-background 'fringe "black")
+  (setq default-frame-alist
+	(nconc (list '(mouse-color . "black")
+		     '(cursor-type . box)
+		     '(cursor-color . "black"))
+	       default-frame-alist))
+  (blink-cursor-mode -1)
   (start-alarm-clock)
   (alarm-clock-reposition)
   (alarm-clock-reposition 10))
