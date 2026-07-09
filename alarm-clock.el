@@ -191,7 +191,9 @@
   (setq mode-line-format nil)
   (erase-buffer)
   (alarm-clock-mode)
-  (start-alarm-clock))
+  (start-alarm-clock)
+  (alarm-clock-reposition)
+  (alarm-clock-reposition 10))
 
 (defun alarm-clock-pause ()
   (interactive)
@@ -466,10 +468,10 @@
   ;;(message "lx: %s dim: %s" lx alarm-clock-dim)
   )
 
-(defun alarm-clock-reposition ()
+(defun alarm-clock-reposition (&optional timeout)
   (interactive)
   (run-at-time
-   5 nil
+   (or 5 timeout) nil
    (lambda ()
      (let ((frame-resize-pixelwise t))
        (set-frame-position (selected-frame) 0 0)
@@ -546,8 +548,11 @@
 (defun alarm-clock-menu-execute ()
   "Execute the selected menu item."
   (interactive)
-  (setq alarm-clock-menu-item -1)
-  (alarm-clock-display))
+  (let ((func (cadr (elt alarm-clock-menu alarm-clock-menu-item))))
+    (when func
+      (funcall func))
+    (setq alarm-clock-menu-item -1)
+    (alarm-clock-display)))
 
 (provide 'alarm-clock)
 
