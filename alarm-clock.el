@@ -132,9 +132,9 @@
   
   "a" #'alarm-clock-cancel-alarm
 
-  "4" #'alarm-clock-light-off
-  "6" #'alarm-clock-light-on
-  "5" #'alarm-clock-night-night
+  "4" #'alarm-clock-menu-down
+  "6" #'alarm-clock-menu-up
+  "5" #'alarm-clock-menu-execute
 
   "1" #'alarm-clock-decrease-volume
   "3" #'alarm-clock-increase-volume
@@ -379,6 +379,36 @@
       (svg-rectangle svg 0 0 width height
 		     :fill "#000000"
 		     :opacity alarm-clock-dim))
+    (when (> alarm-clock-menu-item -1)
+      (let* ((margin 40)
+	     (stride (/ (- height (* margin 2)) (length alarm-clock-menu))))
+	(svg-rectangle svg
+		       margin (+ margin (* alarm-clock-menu-item stride))
+		       (- width (* margin 2))
+		       stride
+		       :fill "yellow")
+	(svg-rectangle svg margin margin
+		       (- width (* margin 2)) (- height (* margin 2))
+		       :fill "none"
+		       :stroke-color "red"
+		       :stroke-width 8)
+	(cl-loop for (text _) in alarm-clock-menu
+		 for y from (+ margin 20) 
+		 upto (- height (* margin 2))
+		 by stride
+		 do
+		 (svg-text svg text
+			   :x (+ margin 20)
+			   :y (+ y 70)
+			   :font-size 80
+			   :font-weight "bold"
+			   :fill "red"
+			   :font-family "futura")
+		 (svg-line svg
+			   margin (+ y 110)
+			   (- width margin) (+ y 110)
+			   :stroke-width 4
+			   :stroke-color "red"))))
     (insert-image (svg-image svg :width 720))
     (goto-char (point-min))))
 
@@ -472,6 +502,35 @@
 	 (when (> (cl-incf alarm-clock-network-failures) 6)
 	   (start-process "nmcli" nil "nmcli" "con" "up" "Beige")
 	   (setq alarm-clock-network-failures 0)))))))
+
+(defvar alarm-clock-menu
+  '(("Nighty Nighty" alarm-clock-night-night)
+    ("Lights On" alarm-clock-light-on)
+    ("Lights Off" alarm-clock-light-off)
+    ("Flat Off" alarm-clock-flat-off)
+    ("Flat Off/Office" alarm-clock-flat-off-not-office)))
+
+(defvar alarm-clock-menu-item -1)
+
+(defun alarm-clock-menu-down ()
+  "Go down in the menu."
+  (interactive)
+  (setq alarm-clock-menu-item
+	(min (1+ alarm-clock-menu-item) (1- (length alarm-clock-menu))))
+  (alarm-clock-display))
+
+(defun alarm-clock-menu-up ()
+  "Go up in the menu."
+  (interactive)
+  (setq alarm-clock-menu-item
+	(max (1- alarm-clock-menu-item) -1))
+  (alarm-clock-display))
+
+(defun alarm-clock-menu-execute ()
+  "Execute the selected menu item."
+  (interactive)
+  (setq alarm-clock-menu-item -1)
+  (alarm-clock-display))
 
 (provide 'alarm-clock)
 
