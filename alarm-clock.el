@@ -70,12 +70,13 @@
   ;;(run-at-time 10 10 #'alarm-clock-check-network)
   )
 
-(defvar alarm-clock-poll-process nil)
+(defvar alarm-clock-temperature-process nil)
 
 (defun alarm-clock-get-temperature ()
-  (when alarm-clock-poll-process
-    (delete-process alarm-clock-poll-process))
-  (setq alarm-clock-poll-process
+  (when (and alarm-clock-temperature-process
+	     (process-live-p alarm-clock-temperature-process))
+    (delete-process alarm-clock-temperature-process))
+  (setq alarm-clock-temperature-process
 	(make-process
 	 :name "get-temperature"
 	 :buffer (generate-new-buffer " *temperature*")
@@ -97,11 +98,11 @@
 (defvar alarm-clock-sleeve nil)
   
 (defun alarm-clock-get-sleeve ()
-  (when alarm-clock-poll-process
-    (delete-process alarm-clock-poll-process))
+  (when alarm-clock-sleeve-process
+    (delete-process alarm-clock-sleeve-process))
   (with-current-buffer (generate-new-buffer " *sleeve*")
     (set-buffer-multibyte nil)
-    (setq alarm-clock-poll-process
+    (setq alarm-clock-sleeve-process
 	  (make-process
 	   :name "get-sleeve"
 	   :buffer (current-buffer)
