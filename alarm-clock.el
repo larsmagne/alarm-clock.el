@@ -268,11 +268,16 @@
 (defun alarm-clock-number-of-seconds-until (alarm-clock)
   (let ((seconds 0)
 	(now (time-to-seconds (current-time))))
-    (while (not (string= alarm-clock (format-time-string "%H:%M"
-							(seconds-to-time (+ seconds now)))))
+    ;; We compute the number of seconds in this absolutely moronic way
+    ;; just to ensure that we're not mistinking issues w.r.t. Summer
+    ;; Time and etc.
+    (while (not (string= alarm-clock
+			 (format-time-string
+			  "%H:%M" (seconds-to-time (+ seconds now)))))
       (cl-incf seconds 40))
-    (while (string= alarm-clock (format-time-string "%H:%M"
-						   (seconds-to-time (+ seconds now))))
+    (while (string= alarm-clock
+		    (format-time-string
+		     "%H:%M" (seconds-to-time (+ seconds now))))
       (cl-decf seconds))
     seconds))
 
