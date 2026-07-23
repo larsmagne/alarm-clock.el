@@ -296,6 +296,8 @@
 	  alarm-clock-alarm-count 0)
     (setq func
 	  (lambda ()
+	    ;; Start the alarm at a low volume, then run it to the
+	    ;; top, and then stay between 50% and 100%.
 	    (call-process "amixer" nil nil nil
 			  "-c" "2" "sset" "PCM"
 			  (format "%d%%" volume))
